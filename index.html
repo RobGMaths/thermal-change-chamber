@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Thermal Change Chamber</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#111a2e;
+      --panel2:#0f172a;
+      --border:#25314d;
+      --text:#e5e7eb;
+      --muted:#a7b0c0;
+      --pos:#f59e0b; /* warm */
+      --neg:#3b82f6; /* cool */
+      --good:#22c55e;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--text);
+      background: radial-gradient(1200px 600px at 50% 0%, #152042 0%, var(--bg) 55%);
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      padding:18px;
+    }
+    .app{
+      width:min(1100px, 100%);
+      display:grid;
+      grid-template-columns: 280px 1fr 320px;
+      gap:14px;
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:14px;
+      box-shadow: 0 18px 45px rgba(0,0,0,.35);
+    }
+    h1{
+      margin:0 0 10px;
+      font-size:18px;
+      letter-spacing:.4px;
+    }
+    .sub{
+      margin:0 0 14px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+    }
+
+    /* Left: bricks */
+    .brick-grid{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:10px;
+    }
+    .brick{
+      user-select:none;
+      cursor:grab;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      font-weight:800;
+      text-align:center;
+      font-size:16px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:42px;
+      position:relative;
+      background: rgba(255,255,255,.04);
+    }
+    .brick.pos{ outline:2px solid rgba(245,158,11,.35); }
+    .brick.neg{ outline:2px solid rgba(59,130,246,.35); }
+    .brick.pos::after, .brick.neg::after{
+      content:"";
+      position:absolute; inset:0;
+      border-radius:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), transparent);
+      pointer-events:none;
+    }
+    .brick.pos{ color:#fff; background: linear-gradient(180deg, rgba(245,158,11,.25), rgba(245,158,11,.10)); }
+    .brick.neg{ color:#fff; background: linear-gradient(180deg, rgba(59,130,246,.25), rgba(59,130,246,.10)); }
+
+    /* Center: chamber */
+    .center{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .headerRow{
+      display:flex;
+      gap:12px;
+      align-items:stretch;
+      flex-wrap:wrap;
+    }
+    .tempBox{
+      flex:1 1 280px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background: rgba(17,26,46,.65);
+    }
+    .tempBox .label{ color:var(--muted); font-size:13px; }
+    .tempBox .value{
+      font-size:26px;
+      font-weight:900;
+      letter-spacing:.5px;
+    }
+    .btn{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:700;
+      cursor:pointer;
+      transition:.15s transform, .15s background;
+    }
+    .btn:hover{ background: rgba(255,255,255,.06); transform: translateY(-1px); }
+    .btn:active{ transform: translateY(0px); }
+    .btn.good{ border-color: rgba(34,197,94,.35); }
+
+    .zones{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      align-items:stretch;
+    }
+    .zone{
+      border-radius:18px;
+      border:1px dashed rgba(255,255,255,.22);
+      background: rgba(255,255,255,.02);
+      min-height:280px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      position:relative;
+      overflow:hidden;
+    }
+    .zoneTitle{
+      font-weight:900;
+      letter-spacing:.5px;
+      font-size:14px;
+    }
+    .zoneHint{
+      margin-top:-6px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .dropArea{
+      flex:1;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: radial-gradient(500px 180px at 50% 0%, rgba(59,130,246,.18), transparent 60%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:rgba(229,231,235,.85);
+      font-weight:800;
+      text-align:center;
+      padding:16px;
+    }
+    .dropArea.removal{
+      background: radial-gradient(500px 180px at 50% 0%, rgba(245,158,11,.18), transparent 60%);
+    }
+    .dropArea.over{
+      outline:2px solid rgba(229,231,235,.35);
+      outline-offset: -2px;
+      background: rgba(255,255,255,.06);
+    }
+
+    .tray{
+      margin-top:12px;
+      border-top:1px solid rgba(255,255,255,.10);
+      padding-top:10px;
+    }
+    .trayTitle{ font-size:13px; color:var(--muted); margin-bottom:8px; }
+    .chips{
+      display:flex; flex-wrap:wrap; gap:8px;
+    }
+    .chip{
+      border-radius:999px;
+      padding:6px 10px;
+      border:1px solid rgba(255,255,255,.12);
+      font-weight:900;
+      font-size:13px;
+      background: rgba(255,255,255,.04);
+    }
+    .chip.pos{ border-color: rgba(245,158,11,.35); }
+    .chip.neg{ border-color: rgba(59,130,246,.35); }
+
+    /* Right: log */
+    .log{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      max-height: calc(100vh - 60px);
+    }
+    .logList{
+      overflow:auto;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:12px;
+      padding:10px;
+      background: rgba(255,255,255,.02);
+      max-height: 520px;
+    }
+    .logItem{
+      font-size:13px;
+      padding:8px 8px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      color: rgba(229,231,235,.92);
+    }
+    .logItem:last-child{ border-bottom:none; }
+    .muted{ color:var(--muted); }
+    .mini{
+      font-size:12px; color:var(--muted);
+      line-height:1.35;
+    }
+
+    @media (max-width: 980px){
+      .app{ grid-template-columns: 1fr; }
+      .zones{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT -->
+    <div class="card">
+      <h1>Change Bricks</h1>
+      <p class="sub">Drag a brick into the <b>Chamber</b> to apply a change. Drag into the <b>Removal Zone</b> to remove that change.</p>
+      <div class="brick-grid" id="brickGrid"></div>
+      <p class="mini" style="margin-top:12px;">
+        Teaching move: ask students to predict the new temperature <b>before</b> dropping a brick.
+      </p>
+    </div>
+
+    <!-- CENTER -->
+    <div class="center">
+      <div class="headerRow">
+        <div class="tempBox" aria-live="polite">
+          <div>
+            <div class="label">Current Temperature</div>
+            <div class="muted" style="font-size:12px;margin-top:2px;">Start + net change</div>
+          </div>
+          <div class="value" id="tempValue">0°C</div>
+        </div>
+        <button class="btn" id="undoBtn" title="Undo last action">Undo</button>
+        <button class="btn good" id="resetBtn" title="Reset everything">Reset</button>
+      </div>
+
+      <div class="zones">
+        <div class="card zone">
+          <div class="zoneTitle">CHAMBER</div>
+          <div class="zoneHint">Drop here to <b>apply</b> the directed change.</div>
+          <div class="dropArea" id="chamberDrop">Drop brick to APPLY change</div>
+
+          <div class="tray">
+            <div class="trayTitle">Bricks currently in chamber (active changes)</div>
+            <div class="chips" id="activeChips"></div>
+          </div>
+        </div>
+
+        <div class="card zone">
+          <div class="zoneTitle">REMOVAL ZONE</div>
+          <div class="zoneHint">Drop here to <b>remove</b> that directed change (i.e., add the opposite).</div>
+          <div class="dropArea removal" id="removalDrop">Drop brick to REMOVE change</div>
+
+          <div class="mini">
+            Structural goal: students articulate<br/>
+            <b>remove (+3) ≡ add (−3)</b> and <b>remove (−3) ≡ add (+3)</b>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="card log">
+      <h1>Reasoning Log</h1>
+      <p class="sub">Use this to narrate the structure: start value + change. Encourage “remove a change” language.</p>
+      <div class="logList" id="logList"></div>
+      <p class="mini">
+        Tip: ask “What change did we remove?” then “What opposite change did we effectively add?”
+      </p>
+    </div>
+  </div>
+
+<script>
+  // --- State ---
+  let temperature = 0;
+  let activeBricks = []; // values currently "in chamber"
+  let history = []; // actions for undo
+
+  const brickValues = [1,2,3,4,5,-1,-2,-3,-4,-5];
+
+  // --- DOM ---
+  const brickGrid = document.getElementById('brickGrid');
+  const tempValue = document.getElementById('tempValue');
+  const logList = document.getElementById('logList');
+  const activeChips = document.getElementById('activeChips');
+  const chamberDrop = document.getElementById('chamberDrop');
+  const removalDrop = document.getElementById('removalDrop');
+  const resetBtn = document.getElementById('resetBtn');
+  const undoBtn = document.getElementById('undoBtn');
+
+  // --- Helpers ---
+  const fmt = (n) => (n > 0 ? `+${n}` : `${n}`);
+  const isPos = (n) => n > 0;
+
+  function renderTemp(){
+    tempValue.textContent = `${temperature}°C`;
+  }
+
+  function addLog(text){
+    const div = document.createElement('div');
+    div.className = 'logItem';
+    div.textContent = text;
+    logList.prepend(div);
+  }
+
+  function renderActive(){
+    activeChips.innerHTML = '';
+    if(activeBricks.length === 0){
+      const span = document.createElement('span');
+      span.className = 'muted';
+      span.style.fontSize = '13px';
+      span.textContent = 'None (net change = 0)';
+      activeChips.appendChild(span);
+      return;
+    }
+    activeBricks.forEach((v, idx) => {
+      const chip = document.createElement('div');
+      chip.className = `chip ${isPos(v) ? 'pos' : 'neg'}`;
+      chip.textContent = fmt(v);
+      chip.title = 'Active change in chamber';
+      activeChips.appendChild(chip);
+    });
+  }
+
+  function buildBricks(){
+    brickValues.forEach(v => {
+      const b = document.createElement('div');
+      b.className = `brick ${isPos(v) ? 'pos' : 'neg'}`;
+      b.textContent = fmt(v);
+      b.draggable = true;
+      b.dataset.value = v;
+
+      b.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', String(v));
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+
+      brickGrid.appendChild(b);
+    });
+  }
+
+  function handleDropApply(value){
+    const v = Number(value);
+    temperature += v;
+    activeBricks.push(v);
+    history.push({type:'apply', value:v});
+    addLog(`Applied change ${fmt(v)} → temperature is now ${temperature}°C.`);
+    renderTemp();
+    renderActive();
+  }
+
+  function handleDropRemove(value){
+    const v = Number(value);
+
+    // remove ONE instance of that brick if present; otherwise still allow the "remove a change" action:
+    // pedagogically useful: removing a change can be conceptual even if it wasn't placed.
+    const idx = activeBricks.indexOf(v);
+    const existed = idx !== -1;
+
+    // Removing change v is equivalent to adding -v
+    temperature += (-v);
+
+    if(existed){
+      activeBricks.splice(idx, 1);
+    }
+
+    history.push({type:'remove', value:v, existed});
+    const existedText = existed ? ' (it was in the chamber)' : ' (conceptual removal)';
+    addLog(`Removed change ${fmt(v)}${existedText} → equivalent to adding ${fmt(-v)} → temperature is now ${temperature}°C.`);
+    renderTemp();
+    renderActive();
+  }
+
+  function setDropZone(zoneEl, onDropFn){
+    zoneEl.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      zoneEl.classList.add('over');
+      e.dataTransfer.dropEffect = 'copy';
+    });
+    zoneEl.addEventListener('dragleave', () => zoneEl.classList.remove('over'));
+    zoneEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zoneEl.classList.remove('over');
+      const data = e.dataTransfer.getData('text/plain');
+      if(data === '' || isNaN(Number(data))) return;
+      onDropFn(data);
+    });
+  }
+
+  function resetAll(){
+    temperature = 0;
+    activeBricks = [];
+    history = [];
+    logList.innerHTML = '';
+    addLog('Reset: temperature back to 0°C. Chamber cleared.');
+    renderTemp();
+    renderActive();
+  }
+
+  function undo(){
+    const last = history.pop();
+    if(!last){
+      addLog('Nothing to undo.');
+      return;
+    }
+
+    if(last.type === 'apply'){
+      temperature -= last.value;
+      // remove last matching brick (from end) to preserve sense of stacking
+      for(let i = activeBricks.length - 1; i >= 0; i--){
+        if(activeBricks[i] === last.value){
+          activeBricks.splice(i, 1);
+          break;
+        }
+      }
+      addLog(`Undo: removed applied change ${fmt(last.value)} → temperature is now ${temperature}°C.`);
+    } else if(last.type === 'remove'){
+      // we previously did temperature += (-v); undo means temperature -= (-v) => temperature += v
+      temperature += last.value;
+
+      // if it existed and we removed it from activeBricks, undo should put it back
+      if(last.existed){
+        activeBricks.push(last.value);
+      }
+      addLog(`Undo: reversed removal of ${fmt(last.value)} → temperature is now ${temperature}°C.`);
+    }
+
+    renderTemp();
+    renderActive();
+  }
+
+  // --- Init ---
+  buildBricks();
+  setDropZone(chamberDrop, handleDropApply);
+  setDropZone(removalDrop, handleDropRemove);
+  resetBtn.addEventListener('click', resetAll);
+  undoBtn.addEventListener('click', undo);
+
+  resetAll();
+</script>
+</body>
+</html>
