@@ -35,6 +35,15 @@
       grid-template-columns: 280px 1fr 320px;
       gap:14px;
     }
+    .app::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background: rgba(11,18,32,.70);
+      pointer-events:none;
+      z-index:-1;
+    }
+
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
       border:1px solid var(--border);
